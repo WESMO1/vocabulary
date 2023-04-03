@@ -1,5 +1,6 @@
 async function getResponse() {
   const input = document.getElementById('myInput');
+  let debounceTimer;
   const listItems = document.querySelectorAll('.li');
   const audioButton = document.querySelector('.svg-audio');
 
@@ -11,7 +12,16 @@ async function getResponse() {
       await audio.play();
     }
   };
-
+  const hideEmptyListItems = () => {
+    listItems.forEach(li => {
+      if (!li.innerHTML) {
+        li.style.display = "none";
+      } else {
+        li.style.display = "flex";
+      }
+    });
+  };
+  
   const showData = (word, phonetics, definition1, definition3, partOfSpeech, synonyms) => {
     listItems[0].innerHTML = word;
     listItems[1].innerHTML = phonetics;
@@ -19,7 +29,10 @@ async function getResponse() {
     listItems[3].innerHTML = definition3;
     listItems[4].innerHTML = partOfSpeech;
     listItems[5].innerHTML = synonyms.slice(0, 3).join(', ');
+  
+    hideEmptyListItems();
   }
+  
 
   let loaded = false;
   let lastSearchTerm = '';
@@ -63,27 +76,31 @@ async function getResponse() {
   
       loaded = true;
       lastSearchTerm = searchTerm;
-      input.value = ''; 
+      input.value = '';
   
-      listItems.forEach(li => li.style.display = "flex"); 
+      hideEmptyListItems();
     } else {
       listItems.forEach(li => li.style.display = "none"); 
     }
   };
   
   
-  
-
   input.addEventListener('input', async function(event) {
     const searchTerm = event.target.value;
-    console.log(searchTerm);
+    
   
-    setTimeout(async () => {
+    if (/[\u0400-\u04FF]/.test(searchTerm)) {
+      alert('Введите слово на английском');
+      return;
+    }
+    
+    clearTimeout(debounceTimer); 
+    
+    debounceTimer = setTimeout(async () => {
       await updateResults(searchTerm);
     }, 5000);
   });
   
-
   audioButton.addEventListener('click', async () => {
     if (lastSearchTerm.length > 0) {
       const audioData = await fetchData(lastSearchTerm);
